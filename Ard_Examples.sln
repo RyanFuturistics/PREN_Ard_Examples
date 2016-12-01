@@ -11,7 +11,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MotorDriverL297_298", "Sket
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Us_twoSensMedian", "Ultrasonic_severalSensMedian\Ultrasonic_severalSensMedian.vcxproj", "{87736352-CBA6-487D-BD40-B9960B1502F0}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Us_severalSens", "Ultrasonic_allSens\Ultrasonic_allSens.vcxproj", "{8E0067DE-28B1-4ABC-BE8C-886A4C9070A4}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Us_severalSensHeader", "Ultrasonic_allSens\Ultrasonic_allSens.vcxproj", "{8E0067DE-28B1-4ABC-BE8C-886A4C9070A4}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SerialCom", "SerialCom\SerialCom.vcxproj", "{ACC87229-EA4D-42DA-89B7-7EB2FFA01B9E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{8E0067DE-28B1-4ABC-BE8C-886A4C9070A4}.Debug|x86.Build.0 = Debug|Win32
 		{8E0067DE-28B1-4ABC-BE8C-886A4C9070A4}.Release|x86.ActiveCfg = Release|Win32
 		{8E0067DE-28B1-4ABC-BE8C-886A4C9070A4}.Release|x86.Build.0 = Release|Win32
+		{ACC87229-EA4D-42DA-89B7-7EB2FFA01B9E}.Debug|x86.ActiveCfg = Debug|Win32
+		{ACC87229-EA4D-42DA-89B7-7EB2FFA01B9E}.Debug|x86.Build.0 = Debug|Win32
+		{ACC87229-EA4D-42DA-89B7-7EB2FFA01B9E}.Release|x86.ActiveCfg = Release|Win32
+		{ACC87229-EA4D-42DA-89B7-7EB2FFA01B9E}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
