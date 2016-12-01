@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LED_PWM", "ADC_LED_PWM\ADC_LED_PWM.vcxproj", "{C5F80730-F44F-4478-BDAE-6634EFC2CA88}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Us_oneSens", "Ultrasonic_HC-SR04\Ultrasonic_HC-SR04.vcxproj", "{2C1319BA-6FC4-4A2B-AECC-2F3DEEF04631}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MotorDriverL297_298", "Sketch2\Sketch2.vcxproj", "{AE1085CD-8C16-4661-B609-30A5999F2696}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Us_twoSensMedian", "Ultrasonic_severalSensMedian\Ultrasonic_severalSensMedian.vcxproj", "{87736352-CBA6-487D-BD40-B9960B1502F0}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Us_severalSens", "Ultrasonic_allSens\Ultrasonic_allSens.vcxproj", "{8E0067DE-28B1-4ABC-BE8C-886A4C9070A4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Debug|x86.ActiveCfg = Debug|Win32
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Debug|x86.Build.0 = Debug|Win32
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Release|x86.ActiveCfg = Release|Win32
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Release|x86.Build.0 = Release|Win32
+		{2C1319BA-6FC4-4A2B-AECC-2F3DEEF04631}.Debug|x86.ActiveCfg = Debug|Win32
+		{2C1319BA-6FC4-4A2B-AECC-2F3DEEF04631}.Debug|x86.Build.0 = Debug|Win32
+		{2C1319BA-6FC4-4A2B-AECC-2F3DEEF04631}.Release|x86.ActiveCfg = Release|Win32
+		{2C1319BA-6FC4-4A2B-AECC-2F3DEEF04631}.Release|x86.Build.0 = Release|Win32
+		{AE1085CD-8C16-4661-B609-30A5999F2696}.Debug|x86.ActiveCfg = Debug|Win32
+		{AE1085CD-8C16-4661-B609-30A5999F2696}.Debug|x86.Build.0 = Debug|Win32
+		{AE1085CD-8C16-4661-B609-30A5999F2696}.Release|x86.ActiveCfg = Release|Win32
+		{AE1085CD-8C16-4661-B609-30A5999F2696}.Release|x86.Build.0 = Release|Win32
+		{87736352-CBA6-487D-BD40-B9960B1502F0}.Debug|x86.ActiveCfg = Debug|Win32
+		{87736352-CBA6-487D-BD40-B9960B1502F0}.Debug|x86.Build.0 = Debug|Win32
+		{87736352-CBA6-487D-BD40-B9960B1502F0}.Release|x86.ActiveCfg = Release|Win32
+		{87736352-CBA6-487D-BD40-B9960B1502F0}.Release|x86.Build.0 = Release|Win32
+		{8E0067DE-28B1-4ABC-BE8C-886A4C9070A4}.Debug|x86.ActiveCfg = Debug|Win32
+		{8E0067DE-28B1-4ABC-BE8C-886A4C9070A4}.Debug|x86.Build.0 = Debug|Win32
+		{8E0067DE-28B1-4ABC-BE8C-886A4C9070A4}.Release|x86.ActiveCfg = Release|Win32
+		{8E0067DE-28B1-4ABC-BE8C-886A4C9070A4}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
