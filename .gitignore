@@ -6,7 +6,6 @@ ADC_LED_PWM/Debug/ADC_LED_PWM.hex
 ADC_LED_PWM/Debug/LED_PWM.cpp.d
 *.o
 *.xml
-*.vcxproj
 *.log
 *.d
 Ultrasonic_HC-SR04/Debug/board.buildinfo
