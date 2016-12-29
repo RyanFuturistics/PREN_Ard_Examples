@@ -12,7 +12,7 @@
 
 #endif
 /* --------------- sonar.h --------------- */
-#define SONAR_NUM		6
+#define SONAR_NUM		3
 #define MAX_DISTANCE	200
 #define MEDIAN_ITERATIONS 3
 //#define PING_INTERVAL	33		//Millisekunden zwischen sensor pings (29ms als minimum).
@@ -26,7 +26,7 @@ typedef enum Us_ErrorCode {
 //enum Us_ErrorCode { US_OK, US_NOK, US_OUT_OF_RANGE, US_DEFAULT };
 
 /* ---------- Funktionen ---------- */
-void checkRange_cm(unsigned int distance_cm);
+void checkRange_mm(float distance_mm);
 //
 /* ---------- Get & Set ---------- */
 //
@@ -37,11 +37,10 @@ int getSonar_Num(void);
 //
 /* ---------- Print ---------- */
 //
-//static void printSonar_cm(unsigned int distance_cm);
-void printUsErrorCode(unsigned int distance_cm);
-void printSonarPing_cm(unsigned int distance_cm);
-void printSonarMedian_cm(unsigned int distance_cm);
+//static void printSonar_mm(unsigned int distance_mm);
+void printUsErrorCode(float distance_mm);
+void printSonarPing_mm(float distance_mm);
+void printSonarMedian_mm(float distance_mm);
 //static void printSonar_us(unsigned long time);
 void printSonarPing_us(unsigned long time_us);
 void printSonarMedian_us(unsigned long time_us);
-

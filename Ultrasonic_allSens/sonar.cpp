@@ -6,16 +6,18 @@
 
 extern Us_ErrorCode_t us_state = US_DEFAULT;
 
-void checkRange_cm(unsigned int distance_cm) {
-	if (distance_cm < 4) {
-		us_state = US_NOK;
+void checkRange_mm(float distance_mm) {
+	if (distance_mm < 4 && distance_mm > 0) {
 		setUsErrorCode(US_NOK);
+		//us_state = US_NOK;
 	}
-	if (distance_cm >= 200 || distance_cm <= 0) {
-		us_state = US_OUT_OF_RANGE;
+	else if (distance_mm >= 200 || distance_mm <= 0) {
+		setUsErrorCode(US_OUT_OF_RANGE);
+		//us_state = US_OUT_OF_RANGE;
 	}
 	else {
-		us_state = US_OK;
+		setUsErrorCode(US_OK);
+		//us_state = US_OK;
 	}
 }
 
@@ -36,8 +38,8 @@ int getSonar_Num(void) {
 /**
 *	 Print Status eines USensors.
 */
-void printUsErrorCode(unsigned int distance_cm) {
-	checkRange_cm(distance_cm);
+void printUsErrorCode(float distance_mm) {
+	checkRange_mm(distance_mm);
 	switch (getUsErrorCode()) {
 	case US_NOK:
 		Serial.print("\t NOK");
@@ -58,28 +60,28 @@ void printUsErrorCode(unsigned int distance_cm) {
 /**
 *	Print Laenge der Distanzmessung eines USensors.
 */
-static void printSonar_cm(unsigned int distance_cm) {
+static void printSonar_mm(float distance_mm) {
 	Serial.print("Distance: ");
 	Serial.print(" \t ");
-	Serial.print(distance_cm);
-	Serial.print("cm ");
+	Serial.print(distance_mm);
+	Serial.print("mm ");
 }
 
 /**
-*	Ping-Messung in cm.
+*	Ping-Messung in mm.
 */
-void printSonarPing_cm(unsigned int distance_cm) {
-	printSonar_cm(distance_cm);
+void printSonarPing_mm(float distance_mm) {
+	printSonar_mm(distance_mm);
 	Serial.print("(Ping) \n");
-	//printUsErrorCode(distance_cm);
+	//printUsErrorCode(distance_mm);
 }
 /**
-*	Median-Messung in cm.
+*	Median-Messung in mm.
 */
-void printSonarMedian_cm(unsigned int distance_cm) {
-	printSonar_cm(distance_cm);
+void printSonarMedian_mm(float distance_mm) {
+	printSonar_mm(distance_mm);
 	Serial.print("(Median) \n");
-	//printUsErrorCode(distance_cm);
+	//printUsErrorCode(distance_mm);
 }
 
 /**
