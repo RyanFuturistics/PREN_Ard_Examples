@@ -101,7 +101,7 @@ void loop() {
 		us_timeMeasurement[i] = millis();								// Messung fuer die...
 		us_median_s[i] = sonar[i].ping_median(MEDIAN_ITERATIONS);
 		us_timeMeasurement[i] = millis() - us_timeMeasurement[i];		//... Zeit der Sensorauswertung
-		us_median_mm[i] = (us_median_s[i] / US_ROUNDTRIP_CM) * 10;				//@change use mm !!!!!!!!!!!
+		us_median_mm[i] = (us_median_s[i] / US_ROUNDTRIP_CM) * 10;				//mm !
 	}
 
 	//------ << Seriell - Messungen >> ------
