@@ -98,6 +98,8 @@ class Sensor_Array:
 
 
 
+
+
 if __name__ == "__main__":
     #logs sensor data on disk
 
@@ -111,10 +113,10 @@ if __name__ == "__main__":
     time.sleep(1)
 
     while True:
-        with open("Sensor.log") as f:
+        with open("Sensor.log", "a") as f:
             for sensor in a.sensors:
-                f.write("{%.2f};".format(sensor.mean()))
-
+                f.write("{:.2f};".format(sensor.mean()))
+            
             f.write("\n")
             time.sleep(.06 * len(a.sensors))
 
