@@ -12,6 +12,7 @@ class Robot:
         self.speed = 1
         self.left_ticks = 0
         self.right_ticks = 0
+        self.cm_to_ticks = 42
         state = "ok"
 
     def send_cmd(self, cmd):
@@ -35,6 +36,12 @@ class Robot:
             log.debug("Set speed value to " + str(speed))
         else:
             log.critical("Received invalid speed value: " + str(speed))
+
+    def move_fwd(self, cm):
+        self.move_fwd_ticks(cm * self.cm_to_ticks)
+
+    def move_rev(self, cm):
+        self.move_rev_ticks(cm * self.cm_to_ticks)
 
     def move_fwd_ticks(self, ticks):
         log.debug("FWD " + str(ticks) + "ticks")

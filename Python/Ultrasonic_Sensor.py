@@ -25,6 +25,7 @@ class Ultrasonic_Sensor:
 
         GPIO.setup(echo_pin, GPIO.IN, pull_up_down = GPIO.PUD_DOWN)
         GPIO.setup(trigger_pin, GPIO.OUT)
+        self.write_pin(0)
 
         self.write_pin(0)
 
@@ -45,7 +46,10 @@ class Ultrasonic_Sensor:
     def mean(self):
         return float(sum(self.values)) / max(len(self.values), 1)
 
-    def get_value(self):
+    def get_last_value(self):
+        return self.values[self.n-1]
+
+    def __get_value__(self):
         log.debug("Trigger")
         self.trigger()
 
@@ -87,7 +91,7 @@ class Sensor_Array:
         self.running = True
         while self.running:
             for sensor in self.sensors:
-                sensor.get_value()
+                sensor.__get_value__()
 
     def stop_measurement_loop(self):
         self.running = False
@@ -95,6 +99,7 @@ class Sensor_Array:
 
 
 if __name__ == "__main__":
+    #logs sensor data on disk
 
     s1 = Ultrasonic_Sensor(3, 11)
 
@@ -105,9 +110,14 @@ if __name__ == "__main__":
     t1.start()
     time.sleep(1)
 
-    for i in range(10):
-        print "***************", s1.mean()
-        time.sleep(.7)
+    while True:
+        with open("Sensor.log") as f:
+            for sensor in a.sensors:
+                f.write("{%.2f};".format(sensor.mean()))
+
+            f.write("\n")
+            time.sleep(.06 * len(a.sensors))
+
 
     a.stop_measurement_loop()
     t1.join()
