@@ -23,15 +23,16 @@ class Robot:
             log.critical("Serial Write Error")
 
     def read(self):
-        data =  self.handle.readline()[:-1]
-        try:
-            self.state, self.left_ticks, self.right_ticks = data.split(",")
-        except Exception as e:
-            self.state = "Error2"
-            log.critical("Serial Write Error")
+        if self.handle.in_waiting:
+            data =  self.handle.readline()[:-1]
+            try:
+                self.state, self.left_ticks, self.right_ticks = data.split(",")
+            except Exception as e:
+                self.state = "Error2"
+                log.critical("Serial Write Error")
 
     def set_speed(self, speed):
-        if 0 < speed < 256:
+        if 0 <= speed <= 255:
             self.speed = speed
             log.debug("Set speed value to " + str(speed))
         else:
@@ -52,11 +53,11 @@ class Robot:
         self.send_cmd("C{:010d}{:03d}0".format(ticks, self.speed))
 
     def fwd(self, left_speed, right_speed):
-        log.debug("FWD L, R Speed " + str(left_speed) + "," + + str(right_speed) )
+        log.debug("FWD L, R Speed " + str(left_speed) + "," + str(right_speed) )
         self.send_cmd("M{:03d}{:03d}0".format(left_speed, right_speed))
 
-    def fwd(self, left_speed, right_speed):
-        log.debug("REV L, R Speed " + str(left_speed) + "," + + str(right_speed) )
+    def rev(self, left_speed, right_speed):
+        log.debug("REV L, R Speed " + str(left_speed) + "," + str(right_speed) )
         self.send_cmd("M{:03d}{:03d}0".format(left_speed, right_speed))
 
     def left(self, degrees):
