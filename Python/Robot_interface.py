@@ -28,6 +28,7 @@ class Robot:
             try:
                 self.state, self.left_ticks, self.right_ticks = data.split(",")
             except Exception as e:
+
                 self.state = "Error2"
                 log.critical("Serial Write Error")
 
@@ -46,27 +47,27 @@ class Robot:
 
     def move_fwd_ticks(self, ticks):
         log.debug("FWD " + str(ticks) + "ticks")
-        self.send_cmd("C{:010d}{:03d}1".format(ticks, self.speed))
+        self.send_cmd("C{:010d},{:03d}1".format(ticks, self.speed))
 
     def move_rev_ticks(self, ticks):
         log.debug("FWD " + str(ticks) + "ticks")
-        self.send_cmd("C{:010d}{:03d}0".format(ticks, self.speed))
+        self.send_cmd("C{:010d},{:03d}0".format(ticks, self.speed))
 
     def fwd(self, left_speed, right_speed):
         log.debug("FWD L, R Speed " + str(left_speed) + "," + str(right_speed) )
-        self.send_cmd("M{:03d}{:03d}0".format(left_speed, right_speed))
+        self.send_cmd("M{:03d},{:03d}0".format(left_speed, right_speed))
 
     def rev(self, left_speed, right_speed):
         log.debug("REV L, R Speed " + str(left_speed) + "," + str(right_speed) )
-        self.send_cmd("M{:03d}{:03d}0".format(left_speed, right_speed))
+        self.send_cmd("M{:03d},{:03d}0".format(left_speed, right_speed))
 
     def left(self, degrees):
         log.debug("turn left" + str(degrees))
-        self.send_cmd("L{:010d}0".format(degrees))
+        self.send_cmd("L{:010d}".format(degrees))
 
     def right(self, degrees):
         log.debug("turn right" + str(degrees))
-        self.send_cmd("R{:010d}0".format(degrees))
+        self.send_cmd("R{:010d}".format(degrees))
 
     def stop(self):
         log.debug("STOP ")
