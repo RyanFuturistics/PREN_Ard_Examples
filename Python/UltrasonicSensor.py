@@ -65,7 +65,7 @@ class UltrasonicSensor:
         else:
             self.no_echo = True
             distance = self.convert_to_cm(pulse_duration)
-            log.info("echo " + str(distance) + "cm")
+            log.info("echo " + str(distance) + "cm from pin:" + str(self.trigger_pin))
             measurement_time = time.time() - start
 
             self.counter += 1
