@@ -6,7 +6,7 @@ import logging
 import RPi.GPIO as GPIO
 
 
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.DEBUG)
 
 log = logging.getLogger(__name__)
 GPIO.setmode(GPIO.BOARD)
@@ -22,8 +22,9 @@ class UltrasonicSensor:
         self.values = [0] * n
         self.no_echo = False
 
-        GPIO.setup(echo_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.setup(echo_pin, GPIO.IN)#, pull_up_down=GPIO.PUD_DOWN)
         GPIO.setup(trigger_pin, GPIO.OUT)
+        log.debug("Setup Trigger %d, Echo %d" % (trigger_pin, echo_pin))
         self.write_pin(0)
 
     def read_pin(self):
@@ -78,24 +79,31 @@ class UltrasonicSensor:
 
 
 class SensorArray:
-    FL = 0
-    FR = 1
+
     LF = 1
-    RF = 2
     LR = 3
-    RR = 4
+    RF = 2
+    RR = 3
+    FL = 4
+    FR = 5
 
-    trigger_pins = [1, 2, 3, 4, 5]
-    echo_pins = [1, 2, 3, 4, 5]
+    trigger_pins =  [3, 5, 7, 11, 13]#13, 15]
+    echo_pins =     [16, 18, 22, 24, 26]#26, 28]
 
-    def __init__(self, n=6):
-        self.sensors = [None] * n
+    def __init__(self, n_sensors=5):
+        self.sensors = [None] * n_sensors
+        self.n_sensors = range(n_sensors)
         self.running = True
         self.init = 0  # Keeps count when initalising Sensors
 
-    def add_sensor(self):
-        self.sensors[self.init] = UltrasonicSensor(self.trigger_pins[self.init], self.echo_pins[self.init])
-        self.init += 1
+    def add_Sensors(self):
+        for sensor_nr in self.n_sensors:
+            self.__add_sensor__(sensor_nr)
+
+
+    def __add_sensor__(self, nr):
+        self.sensors[nr] = UltrasonicSensor(self.trigger_pins[nr], self.echo_pins[nr])
+
 
     def start_measurement_loop(self):
         self.running = True
@@ -110,10 +118,10 @@ class SensorArray:
 if __name__ == "__main__":
     # logs sensor data on disk
 
-    s1 = UltrasonicSensor(3, 11)
+
 
     a = SensorArray()
-    a.add_sensor(s1)
+    a.add_Sensors()
 
     t1 = threading.Thread(target=a.start_measurement_loop)
     t1.start()
