@@ -25,15 +25,22 @@ class Robot:
     def read(self):
         if self.handle.in_waiting:
             data =  self.handle.readline()[:-1]
+
             try:
-                self.state, self.left_ticks, self.right_ticks = data.split(",")
+                items =  data.split(",")
+                self.state = items[0]
+
+                if self.state == "ok" or self.state == "busy":
+                    self.left_ticks, self.right_ticks = items[1], items[2], items[3]
+                else:
+                    log.critical("Arduino Serial Communication Problem Received string <%s>:" % data)
             except Exception as e:
 
                 self.state = "Error2"
                 log.critical("Serial Write Error")
 
     def set_speed(self, speed):
-        if 0 <= speed <= 255:
+        if 0 <= speed <= 1600:
             self.speed = speed
             log.debug("Set speed value to " + str(speed))
         else:

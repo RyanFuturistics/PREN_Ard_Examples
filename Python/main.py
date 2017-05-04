@@ -1,5 +1,5 @@
 import Robot_interface
-from  Ultrasonic_Sensor import Sensor_Array, Ultrasonic_Sensor
+from  UltrasonicSensor import SensorArray
 from  TcpConnect import TcpClient
 import Hardware_Interface.Switch
 import Hardware_Interface.Display
@@ -26,27 +26,14 @@ def update():
 
 vision_handle = TcpClient.TcpClient()
 robot = Robot_interface.Robot()
-course_selector = Hardware_Interface.Switch(PIN)
-display = Hardware_Interface.Display(PIN)
+course_selector = Hardware_Interface.Switch(33)
+display = Hardware_Interface.Display([35, 37, 38, 36])
+switch = Hardware_Interface.Switch(31)
 
-sensors = Sensor_Array()
-sensor_left1 = Ultrasonic_Sensor()
-sensors.addSensor(sensor_left1)
+sensors = SensorArray()
+sensors.add_Sensors()
 
-sensor_left2 = Ultrasonic_Sensor()
-sensors.addSensor(sensor_left2)
 
-sensor_front1 = Ultrasonic_Sensor()
-sensors.addSensor(sensor_front1)
-
-sensor_front2 = Ultrasonic_Sensor()
-sensors.addSensor(sensor_front2)
-
-sensor_right1 = Ultrasonic_Sensor()
-sensors.addSensor(sensor_right1)
-
-sensor_right2 = Ultrasonic_Sensor()
-sensors.addSensor(sensor_right2)
 
 t1 = threading.Thread(target= sensors.start_measurement_loop)
 t1.start()
@@ -66,7 +53,7 @@ else:
 
 robot.fwd(128,128)
 
-while sensor_left1.mean() < 100:
+while sensors[SensorArray.LF].mean() < 100:
     update()
 
 robot.move_fwd(20)
