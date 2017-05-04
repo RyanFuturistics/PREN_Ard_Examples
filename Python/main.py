@@ -18,9 +18,11 @@ def update():
             data = vision_handle.queue.pop(0)
             if data == "GO\n":
                 go = True
-            elif data[:7]=="number":
-                nr = int(data[6:])
+            elif data[:6]=="number":
+                nr = int(data[6:7])
                 display.display_number(nr)
+            elif data == "STOP\n":
+                go = False
 
 
 
