@@ -58,6 +58,8 @@ public:
 	double GetKd();						  // where it's important to know what is actually 
 	int GetMode();						  //  inside the PID.
 	int GetDirection();					  //
+	double PID::GetITerm();		//@added
+	void PID::SetITerm(double ITermValue);
 
 private:
 	void Initialize();
