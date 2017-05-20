@@ -9,6 +9,24 @@
 
 #include "encoder.h"
 #include "motorDriver.h"
+
+#define MAXDEGREETICKS 10000	//@change (nicht mehr als 360° Drehung)
+#define MAXINCREMENTTICKS 15000 // etwa 1.5m
+//----- PID
+//Werte Bereich => Kp: 0.25-0.32, Ki = 0.6-1.2, Kd = 0-0.0008 @delay min.20ms (Polling)
+//Optimal nur Rad (17-04-17): Kp = 0.32, Ki = 0.8, Kd = 0 @Setpoint 100	//SCHWINGEN BEI RUECKSPRUNG AUF "0"
+//kp = 0.3 Schwingen leicht (85-105)
+//kp = 0.35 Schwingen 35-50 @setpoint = 200
+//kp = 0.43 Schwingen
+#define PID_P 0.28
+#define PID_I 1
+#define PID_D 0.004
+//-- MAX
+#define PID_P_MAX 0.5
+#define PID_I_MAX 2
+#define PID_D_MAX 0.03
+
+#define PID_OUTPUT_MAX 245
 /*---------- || < Flags > || ----------*/
 boolean debugFlag = 0;	//0:Send NO data to PC 1:Send data to PC via Serial
 
@@ -25,8 +43,8 @@ enum color_ {
 const byte rgbLeftRed = 22;
 const byte rgbLeftBlue = 23;
 const byte rgbLeftGreen = 24;
-const byte rgbRightRed = 27;//27
-const byte rgbRightBlue = 26;//
+const byte rgbRightRed = 27;
+const byte rgbRightBlue = 26;
 const byte rgbRightGreen = 25;
 
 typedef struct rgb_t{
@@ -66,17 +84,14 @@ driver_t driverRight;
 //rightPIDval & leftPIDval nicht mit typedef verbinden !!! Muehsamen verketten mit "PID rightPID" etc.
 struct {
 	double Setpoint, Input, Output;
-	double Kp = 0.28, Ki = 0.8, Kd = 0.004;
-	//Werte Bereich => Kp: 0.25-0.32, Ki = 0.6-1.2, Kd = 0-0.0008 @delay min.20ms (Polling)
-	//Optimal nur Rad (17-04-17): Kp = 0.32, Ki = 0.8, Kd = 0 @Setpoint 100	//SCHWINGEN BEI RUECKSPRUNG AUF "0"
-	//kp = 0.3 Schwingen leicht (85-105)
-	//kp = 0.35 Schwingen 35-50 @setpoint = 200
- 	//kp = 0.43 Schwingen
+	double Kp = PID_P, Ki = PID_I, Kd = PID_D;
+	//double Kp = 0.28, Ki = 0.8, Kd = 0.004;
 }rightPIDval;
 
 struct {
 	double Setpoint, Input, Output;
-	double Kp = 0.28, Ki = 0.8, Kd = 0.004;
+	double Kp = PID_P, Ki = PID_I, Kd = PID_D;
+	//double Kp = 0.28, Ki = 0.8, Kd = 0.004;
 }leftPIDval;
 
 PID rightPID(&rightPIDval.Input, &rightPIDval.Output, &rightPIDval.Setpoint,
@@ -87,7 +102,10 @@ PID leftPID(&leftPIDval.Input, &leftPIDval.Output, &leftPIDval.Setpoint,
 /*---------- || < cmdNavigation > || ----------*/
 /*------ | Values | ------*/
 int degreeTicks_ = 0;
-int degree_ = 0;
+long ticksLeft_ = 0;
+long ticksRight_ = 0;
+int direction_ = 0;
+//int degree_ = 0;
 struct {
 	// From Raspberry
 	int direction = 0;		//0 bis 4
@@ -95,11 +113,25 @@ struct {
 	int leftValue = 0;
 	int leftIncrement = 0;	//n increments zum fahren
 	int rightInrement = 0;	//""
-	int leftDegree = 0;		//Winkel zum fahren
-	int rightDegree = 0;	//""
-	//
-	int encRightOld = 0;
-	int encLeftOld = 0;
+	//int leftDegree = 0;		//Winkel zum fahren [Degree]
+	int leftDegreeTicks = 0;	//Winkel zum fahren [Ticks]
+	//int rightDegree = 0;		//Winkel zum fahren [Degree]
+	int rightDegreeTicks = 0;	//Winkel zum fahren [Ticks]
+	
+	//----- Ticks ------
+	//int encRightOld = 0;
+	//int encLeftOld = 0;
+	long encRightOld = 0;
+	long encLeftOld = 0;
+
+	//----- PID -------
+	double	pidLeftP = PID_P,
+			pidLeftI = PID_I,
+			pidLeftD = PID_D;
+	double	pidRightP=PID_P,
+			pidRightI=PID_I,
+			pidRightD=PID_D;
+
 }cmdNavigationValues;
 /*------ | enum | ------*/
 enum cmd {
@@ -113,10 +145,16 @@ enum cmd {
 	TURNRIGHT90,
 };
 cmd cmdNavigation = NOCMD;
-
+/*---------- || < Funktionen > || ----------*/
+long deltaTicksLeft = 0;
+long deltaTicksRight = 0;
+/*------ | Control | ------*/
+//long deltaTicksControl = 0;
+/*------ | Turn | ------*/
+//long deltaTicksTurn = 0;
 /*---------- || < Kommunikation > || ----------*/ 
 //@works 16-04-2017
-boolean printInformationFlag = 1;
+boolean printInformationFlag = 0;
 char cmdRaspb;
 String s1, s2, s3; //Buffers for serial protocol
 
@@ -210,12 +248,14 @@ void loop() {
 	/*----- || Debuging || -----*/
 	 //----- Arduino => PC
 	if (debugFlag == 1) {
-		if ((millis() - tSerialPcRefresh) >= 3000) {
+		if ((millis() - tSerialPcRefresh) >= 2000) {
 			tSerialPcRefresh = millis();
-			//printEncAll(&encLeft); printEncAll(&encRight);
-			printcmdNavigationValues();
-			printErrorCode(error);
-			error = NOERROR;		// Testing
+			//----- Print -----
+			printEncAll(&encLeft); printEncAll(&encRight);
+			//printcmdNavigationValues();
+			//printErrorCode(error);
+			//error = NOERROR;		// Testing
+			Serial.println("--- PID");
 			printPIDvalue();
 			Serial.println("----------");
 			//printPIDintegral();
@@ -259,7 +299,7 @@ void loop() {
 	* -> Polling
 	* Ablauf:	Encoder => PID => Driver
 	*/
-	if ((millis() - tControl) > 20) {	// 30 works
+	if ((millis() - tControl) > 20) {	// 20 works
 		tControl = millis();
 		
 		/*---------- || updateEncoder || ----------*/
@@ -269,6 +309,7 @@ void loop() {
 		//----- right
 		rightPIDval.Input = abs(encRight.result.ticksPerSecond);		//@New abs()
 		rightPID.Compute();
+
 		//----- left
 		leftPIDval.Input = abs(encLeft.result.ticksPerSecond);			//@New abs()
 		leftPID.Compute();
@@ -294,13 +335,38 @@ void loop() {
 		printInformationFlag = 1;
 		switch (cmdRaspb) {
 		/*
-		E: Reset Error
+		C [Ticks, Speed, Direction] : RobotControl 
+		Move robot forward specified numbers of encoder ticks.
 		*/
+		case 'C':
+			//Funktionsaufruf
+			// Check MaxValue for Increments && DriveDirection (Forward or Backward)
+			if (
+				((cmdNavigationValues.leftIncrement < MAXINCREMENTTICKS) || (cmdNavigationValues.rightInrement < MAXINCREMENTTICKS))
+				&& ((cmdNavigationValues.direction == 1) || (cmdNavigationValues.direction == 2)))
+			{
+				statusArduino = BUSY;
+				cmdNavigation = CONTROL;
+				// Wete
+				ticksLeft_ = cmdNavigationValues.leftIncrement;
+				ticksRight_ = cmdNavigationValues.rightInrement;
+				direction_ = cmdNavigationValues.direction;
+				cmdNavigationValues.encLeftOld = encLeft.ticks.now;
+				cmdNavigationValues.encRightOld = encRight.ticks.now;
+			}
+			else {
+				cmdNavigationValues.leftIncrement = 0;
+				cmdNavigationValues.rightInrement = 0;
+			}
+			break;
+			/*
+			E: Reset Error
+			*/
 		case 'E':
 			error = NOERROR;
 			break;
 		/*
-		M: MotorControl (Speed Left, Speed Right, Direction)
+		M [Speed Left, Speed Right, Direction] : MotorControl 
 		Set Speed of the two motors left and right and direction.
 		*/
 		case 'M':
@@ -310,52 +376,106 @@ void loop() {
 			setDriverDirection(cmdNavigationValues.direction);
 			break;
 		/*
-		C: RobotControl (Ticks, Speed, Direction)
-		Move robot forward specified numbers of encoder ticks.
+		 * G [] : GetPIDoutput
+		 * Get PID left & right output and time
 		*/
-		case 'C':
-			//Funktionsaufruf
-
+		//@Test
+		case 'G':
+			Serial.print(millis()); Serial.print(",");				// millis
+			Serial.print(leftPIDval.Output); Serial.print(",");		// PID Left Output
+			Serial.print(rightPIDval.Output); Serial.print(",");	// PID Right Output
+			printInformationFlag = 0;
 			break;
 		/*
-		* I: Information
+		* I[] : Information
 		* Sendback Information
 		*/
 		case 'I':
 			//Informationen nach switch-case
 			break;
 		/*
-		L: Left Turn (0° to 180°)
-		Turn robot according to angle specified, even when moving forward.
+		 * L [ticks] : Left Turn (0° to 180°)
+		 * Turn robot according to angle specified, even when moving forward.
 		*/
 		case 'L':
 			statusArduino = BUSY;
 			cmdNavigation = TURNLEFT;
 			cmdNavigationValues.encRightOld = encRight.ticks.now;
 			// 90° => 1888 i.O. @ Setpoint left/right = 100
+			/* degreeTicks_ (direkt) */
+			if (cmdNavigationValues.leftDegreeTicks > MAXDEGREETICKS) { degreeTicks_ = 0; }
+			else {
+				degreeTicks_ = cmdNavigationValues.leftDegreeTicks;
+			}
+			/* degree => degreeTicks_ (umrechnen)
 			if (cmdNavigationValues.leftDegree > 360) {	degree_ = 0;}
-			else {degree_ = cmdNavigationValues.leftDegree;	
+			else {
+				degree_ = cmdNavigationValues.leftDegree;	
 			}
 			degreeTicks_ = (int) (1888 / 90) * degree_;
+			*/
+			break;
+		/* 
+		 * P [P,I,D]: SetTuninings for PID LEFT
+		*/
+		case 'P':
+			//Serial.println("TESTING PID LEFT");		//@Testing
+			//----- | Schutmechanismus | -----
+			if (cmdNavigationValues.pidLeftP < PID_P_MAX &&
+				cmdNavigationValues.pidLeftI < PID_I_MAX &&
+				cmdNavigationValues.pidLeftD < PID_D_MAX) {
+				//----- | Tuning | -----
+				leftPIDval.Kp = cmdNavigationValues.pidLeftP;
+				leftPIDval.Ki = cmdNavigationValues.pidLeftI;
+				leftPIDval.Kd = cmdNavigationValues.pidLeftD;
+				leftPID.SetTunings(leftPIDval.Kp, leftPIDval.Ki, leftPIDval.Kd);
+			}
+			printInformationFlag = 0;
 			break;
 		/*
-		R: Right Turn (0° to 180°)
-		Turn robot according to angle specified, even when moving forward.
+		 * Q [P,I,D]: SetTuninings for PID RIGHT [...P,I,D]
+		*/
+		case 'Q':
+			//Serial.println("TESTING PID RIGHT");		//@Testing
+			//----- | Schutmechanismus | -----
+			if (cmdNavigationValues.pidRightP < PID_P_MAX &&
+				cmdNavigationValues.pidRightI < PID_I_MAX &&
+				cmdNavigationValues.pidRightD < PID_D_MAX) {
+				//----- | Tuning | -----
+				rightPIDval.Kp = cmdNavigationValues.pidRightP;
+				rightPIDval.Ki = cmdNavigationValues.pidRightI;
+				rightPIDval.Kd = cmdNavigationValues.pidRightD;
+				rightPID.SetTunings(rightPIDval.Kp, rightPIDval.Ki, rightPIDval.Kd);
+			}			
+			printInformationFlag = 0;
+			break;
+		/*
+		* R [ticks]: Right Turn (0° to 180°)
+		* Turn robot according to angle specified, even when moving forward.
+		*
 		*/
 		case 'R':
 			statusArduino = BUSY;
 			cmdNavigation = TURNRIGHT;	
-			//cmdNavigationValues.encRightOld = encRight.ticks.now;
 			cmdNavigationValues.encLeftOld = encLeft.ticks.now;
 			// 90° => 1888 i.O. @ Setpoint left/right = 100
+			/* degreeTicks_ (direkt) */
+			//------ Wertzuweisung mit Limit
+			if (cmdNavigationValues.rightDegreeTicks > MAXDEGREETICKS) { degreeTicks_ = 0; }
+			else {
+				degreeTicks_ = cmdNavigationValues.rightDegreeTicks;
+			}
+			/* degree => degreeTicks_
 			if (cmdNavigationValues.rightDegree > 360) { degree_ = 0; }
 			else {
-				degree_ = cmdNavigationValues.rightDegree;
+				//degree_ = cmdNavigationValues.rightDegree;
+				degree_ = cmdNavigationValues.rightDegreeTicks;
 			}
 			degreeTicks_ = (1888 / 90) * degree_;
+			*/
 			break;
 		/*
-		!: Emergency Stop
+		S []: Emergency Stop
 		*/
 		case 'S':
 			//Funktionsaufruf
@@ -378,7 +498,6 @@ void loop() {
 		}
 		
 	}
-
 	else if(statusArduino == BUSY) {
 		/*---------- || cmd Abarbeitung || ----------*/
 		rgbSet(rgbRight, BLUE);
@@ -386,47 +505,75 @@ void loop() {
 
 		switch (cmdNavigation) {
 		case NOCMD:statusArduino = OK; break;
-		case CONTROL: break;
+		case CONTROL: 
+			deltaTicksLeft = abs(encLeft.ticks.now - cmdNavigationValues.encLeftOld);
+			deltaTicksRight = abs(encRight.ticks.now - cmdNavigationValues.encRightOld);
+			if ((deltaTicksLeft < ticksLeft_) && (deltaTicksRight < ticksRight_)) {
+				setDriverDirection(direction_);
+				if (deltaTicksLeft < ticksLeft_) {leftPIDval.Setpoint = 50;}
+				else {leftPIDval.Setpoint = 0; leftPID.SetITerm(0);}
+				if (deltaTicksRight < ticksRight_) {rightPIDval.Setpoint = 50;}
+				else { rightPIDval.Setpoint = 0; rightPID.SetITerm(0);}
+			}
+			else {
+				statusArduino = OK;
+				cmdNavigation = NOCMD;
+				// Reset
+				deltaTicksLeft = 0;
+				deltaTicksRight = 0;
+				leftPID.SetITerm(0); rightPID.SetITerm(0);
+				leftPIDval.Setpoint = 0; rightPIDval.Setpoint = 0;
+				direction_ = 0;
+				printInformationFlag = 1;
+			}
+			break;
 		case EMERGENCY: break;
 		case INFORMATION: break;	//NOT USED HERE
 		case TURNLEFT:
-			if (abs(encRight.ticks.now - cmdNavigationValues.encRightOld) < degreeTicks_) {	//@OPTIMIZE
-				//---- Settings results (left back, right forw)
-				leftPIDval.Setpoint = 100;		//l_pwm
-				rightPIDval.Setpoint = 100;		//r_pwm	
+			deltaTicksRight = abs(encRight.ticks.now - cmdNavigationValues.encRightOld);
+			//if (abs(encRight.ticks.now - cmdNavigationValues.encRightOld) < degreeTicks_) {	//@OPTIMIZE
+			if (deltaTicksRight < degreeTicks_) {
 				setDriverDirection(4);			// left Backward, right Forward
+				//----- Turn speed
+				if (degreeTicks_ > 1000) {
+					leftPIDval.Setpoint = 100;
+					rightPIDval.Setpoint = 100;
+				}
+				else {
+					leftPIDval.Setpoint = 30;
+					rightPIDval.Setpoint = 30;
+				}
 			}
 			else {
 				statusArduino = OK;
 				cmdNavigation = NOCMD;	//@IO?
 				// Reset
 				degreeTicks_ = 0;
-				leftPID.SetITerm(0);
-				rightPID.SetITerm(0);
+				deltaTicksRight = 0;
+				leftPID.SetITerm(0);rightPID.SetITerm(0);
+				leftPIDval.Setpoint = 0;rightPIDval.Setpoint = 0;
 				printInformationFlag = 1;
-				//@TESTING
-				leftPIDval.Setpoint = 0;		//l_pwm
-				rightPIDval.Setpoint = 0;		//r_pwm
 			}
 			break;
 		case TURNLEFT90:break;		// fix 90° turn right
 		case TURNRIGHT: 
-			if (abs(encLeft.ticks.now - cmdNavigationValues.encLeftOld) < degreeTicks_) {	//@OPTIMIZE
-				leftPIDval.Setpoint = 100;		//l_pwm
-				rightPIDval.Setpoint = 100;		//r_pwm	
+			//if (abs(encLeft.ticks.now - cmdNavigationValues.encLeftOld) < degreeTicks_) {	//@OPTIMIZE
+			deltaTicksLeft = abs(encLeft.ticks.now - cmdNavigationValues.encLeftOld);
+			if (deltaTicksLeft < degreeTicks_) {
 				setDriverDirection(3);			// left Forward, right Backward		//@OPTIMIZE only difference
+				//----- Turn Speed
+				if (degreeTicks_ > 1000) {leftPIDval.Setpoint = 100;rightPIDval.Setpoint = 100;}
+				else {leftPIDval.Setpoint = 30;rightPIDval.Setpoint = 30;}
 			}
 			else {
 				statusArduino = OK;
 				cmdNavigation = NOCMD;	//@IO?
 				// Reset
 				degreeTicks_ = 0;
-				leftPID.SetITerm(0);
-				rightPID.SetITerm(0);
+				deltaTicksLeft = 0;
+				leftPID.SetITerm(0);rightPID.SetITerm(0);
+				leftPIDval.Setpoint = 0;rightPIDval.Setpoint = 0;
 				printInformationFlag = 1;
-				//@TESTING
-				leftPIDval.Setpoint = 0;		//l_pwm
-				rightPIDval.Setpoint = 0;		//r_pwm	
 			}
 			break;
 		case TURNRIGHT90: break;		// fix 90° turn right
@@ -443,7 +590,6 @@ void loop() {
 	}
 
 }
-
 
 /*---------- || < Functions - Init > || ----------*/
 /*------- Driver ------*/
@@ -506,13 +652,13 @@ void initPID() {
 	//----- rightPID
 	rightPIDval.Setpoint = 0;
 	//rightPID.SetOutputLimits(double Min, double Max);
-	rightPID.SetOutputLimits(0, 220);
+	rightPID.SetOutputLimits(0, PID_OUTPUT_MAX);
 	//rightPID.SetSampleTime(???);
 	rightPID.SetMode(AUTOMATIC);		// Turn PID ON
 
 	//----- leftPID
 	leftPIDval.Setpoint = 0;
-	leftPID.SetOutputLimits(0, 220);
+	leftPID.SetOutputLimits(0, PID_OUTPUT_MAX);
 	leftPID.SetMode(AUTOMATIC);
 }
 
@@ -553,14 +699,10 @@ void encoderRight() {
 void setDriverDirection(int value) {
 	switch (value) {
 	case 0:	driverLeft.direction = STOP; driverRight.direction = STOP; break;	//DONT USE
-	case 1: driverLeft.direction = FORWARD; driverRight.direction = FORWARD;
-		break;
-	case 2: driverLeft.direction = BACKWARD; driverRight.direction = BACKWARD;
-		break;
-	case 3: driverLeft.direction = FORWARD; driverRight.direction = BACKWARD;
-			break;
-	case 4: driverLeft.direction = BACKWARD; driverRight.direction = FORWARD;
-			break;
+	case 1: driverLeft.direction = FORWARD; driverRight.direction = FORWARD;break;
+	case 2: driverLeft.direction = BACKWARD; driverRight.direction = BACKWARD;break;
+	case 3: driverLeft.direction = FORWARD; driverRight.direction = BACKWARD;break;
+	case 4: driverLeft.direction = BACKWARD; driverRight.direction = FORWARD;break;
 	default:break;
 	} 
 }
@@ -570,10 +712,12 @@ void printcmdNavigationValues() {
 	Serial.print("Direction: "); Serial.println(cmdNavigationValues.direction);
 	Serial.print("Left Value: ");Serial.println(cmdNavigationValues.leftValue);
 	Serial.print("Left Increment: "); Serial.println(cmdNavigationValues.leftIncrement);
-	Serial.print("Left Degree"); Serial.println(cmdNavigationValues.leftDegree);
+	//Serial.print("Left Degree: "); Serial.println(cmdNavigationValues.leftDegree);
+	Serial.print("Left DegreeTicks: "); Serial.println(cmdNavigationValues.leftDegreeTicks);
 	Serial.print("Right Value: "); Serial.println(cmdNavigationValues.rightValue);
 	Serial.print("Right Increment: "); Serial.println(cmdNavigationValues.rightInrement);
-	Serial.print("Right Degree: "); Serial.println(cmdNavigationValues.rightDegree);
+	//Serial.print("Right Degree: "); Serial.println(cmdNavigationValues.rightDegree);
+	Serial.print("Right Degree: "); Serial.println(cmdNavigationValues.rightDegreeTicks);
 }
 void printErrorCode(errorCode error) {
 	Serial.println("---| ErrorCode: ");
@@ -625,7 +769,10 @@ void printPIDvalue() {
 	//--- PID
 	Serial.print("Setpoint"); Serial.println(rightPIDval.Setpoint);
 	Serial.print("T/s: "); Serial.println(rightPIDval.Input);
-	Serial.print("Kp: "); Serial.println(rightPIDval.Kp);
+	Serial.print("PIDvalues: ");
+	Serial.print(rightPIDval.Kp,3); Serial.print(";");
+	Serial.print(rightPIDval.Ki,3); Serial.print(";");
+	Serial.println(rightPIDval.Kd,3);
 	//--- Difference
 	Serial.print("Delta: "); Serial.println(rightPIDval.Input - rightPIDval.Setpoint);
 	//----- Left
@@ -633,6 +780,10 @@ void printPIDvalue() {
 	//--- PID
 	Serial.print("Setpoint:"); Serial.println(leftPIDval.Setpoint);
 	Serial.print("T/s: "); Serial.println(leftPIDval.Input);
+	Serial.print("PIDvalues: ");
+	Serial.print(leftPIDval.Kp,3); Serial.print(";");
+	Serial.print(leftPIDval.Ki,3); Serial.print(";");
+	Serial.println(leftPIDval.Kd,3);
 	//--- Difference
 	Serial.print("Delta: "); Serial.println(leftPIDval.Input - leftPIDval.Setpoint);
 	//--- Difference Right - Left
@@ -647,37 +798,6 @@ void serialEvent() {
 		cmdRaspb = Serial.read();	// Erstes Zeichen einlesen
 
 		switch (cmdRaspb) {
-			// Reset Error
-		case 'E':
-			s1 = Serial.read();// "\n"
-			break;
-		case 'I':
-			Serial.read();
-			break;
-		case 'M': //Motor ; MRightv,Leftv,Dir
-			s1 = Serial.readStringUntil(',');
-			Serial.read();//","
-			s2 = Serial.readStringUntil(',');
-			Serial.read();//","
-			s3 = Serial.readStringUntil('\n');	//"\n"
-			Serial.read();//"\n"
-			if (s1 != NULL && s2 != NULL && s3 != NULL) {
-				cmdNavigationValues.leftValue = s1.toInt();		//l_pwm
-				cmdNavigationValues.rightValue = s2.toInt();		//r_pwm
-				cmdNavigationValues.direction = s3.toInt();	//dir
-			}
-			else {
-				error = SYNTAXERROR;
-				Serial.readString();
-			}
-			break;
-
-		case 'S': //Stop
-			Serial.read();
-			cmdNavigationValues.rightValue = 0;		//r_pwm
-			cmdNavigationValues.leftValue = 0;		//l_pwm
-			break;
-
 		case 'C': //move n steps
 			s1 = Serial.readStringUntil(',');
 			Serial.read();//","
@@ -695,31 +815,100 @@ void serialEvent() {
 				Serial.readString();
 			}
 			break;
-
-		case 'L': //LeftDegree: L degree
-			s1 = Serial.readStringUntil('\n');
-			Serial.read();
-			if (s1 != NULL) {
-				cmdNavigationValues.leftDegree = s1.toInt();	//l_deg
+		// Reset Error
+		case 'E':
+			Serial.read();// "\n"
+			break;
+		case 'G':
+			Serial.read();//"\n"
+			break;
+		case 'I':
+			Serial.read();//"\n"
+			break;
+		case 'M': //Motor ; MRightv,Leftv,Dir
+			s1 = Serial.readStringUntil(',');
+			Serial.read();//","
+			s2 = Serial.readStringUntil(',');
+			Serial.read();//","
+			s3 = Serial.readStringUntil('\n');	//"\n"
+			Serial.read();//"\n"
+			if (s1 != NULL && s2 != NULL && s3 != NULL) {
+				cmdNavigationValues.leftValue = s1.toInt();		//l_pwm
+				cmdNavigationValues.rightValue = s2.toInt();	//r_pwm
+				cmdNavigationValues.direction = s3.toInt();		//dir
 			}
 			else {
 				error = SYNTAXERROR;
 				Serial.readString();
 			}
 			break;
-
+		case 'L': //LeftDegree: L ticks
+			s1 = Serial.readStringUntil('\n');
+			Serial.read();
+			if (s1 != NULL) {
+				//cmdNavigationValues.leftDegree = s1.toInt();	//l_deg
+				cmdNavigationValues.leftDegreeTicks = s1.toInt();	//l_degTicks
+			}
+			else {
+				error = SYNTAXERROR;
+				Serial.readString();
+			}
+			break;
+		//@
+		//!!!!! EINGABE IN WIRD ZU MILLI GEWANDELT !!!!!
+		case 'P':	//PIDvalues left (P,I,D)
+			s1 = Serial.readStringUntil(',');	// P
+			Serial.read();//","
+			s2 = Serial.readStringUntil(',');	// I
+			Serial.read();//","
+			s3 = Serial.readStringUntil('\n');	// D + "\n"
+			Serial.read();//"\n"
+			if (s1 != NULL && s2 != NULL && s3 != NULL) {
+				cmdNavigationValues.pidLeftP = (s1.toDouble() / 1000);
+				cmdNavigationValues.pidLeftI = (s2.toDouble() / 1000);
+				cmdNavigationValues.pidLeftD = (s3.toDouble() / 1000);
+			}
+			else {
+				error = SYNTAXERROR;
+				Serial.readString();
+			}
+			break;
+		//@TEST
+		//!!!!! EINGABE IN WIRD ZU MILLI GEWANDELT !!!!!
+		case 'Q':	//PIDvalues right (P,I,D)
+			s1 = Serial.readStringUntil(',');
+			Serial.read();//","
+			s2 = Serial.readStringUntil(',');
+			Serial.read();//","
+			s3 = Serial.readStringUntil('\n');	//"\n"
+			Serial.read();//"\n"
+			if (s1 != NULL && s2 != NULL && s3 != NULL) {
+				cmdNavigationValues.pidRightP = (s1.toDouble()) / 1000;
+				cmdNavigationValues.pidRightI = (s2.toDouble()) / 1000;
+				cmdNavigationValues.pidRightD = (s3.toDouble()) / 1000;
+			}
+			else {
+				error = SYNTAXERROR;
+				Serial.readString();
+			}
+			break;
 		case 'R': //RightDegree: R degree
 			s1 = Serial.readStringUntil('\n');
 			Serial.read();
 			if (s1 != NULL) {
-				cmdNavigationValues.rightDegree = s1.toInt(); //r_deg
+				//cmdNavigationValues.rightDegree = s1.toInt(); //r_deg
+				cmdNavigationValues.rightDegreeTicks = s1.toInt(); //r_deg
 			}
 			else {
 				error = SYNTAXERROR;
 				Serial.readString();
 			}
 			break;
-
+		case 'S': //Stop
+			Serial.read();//"\n"
+			cmdNavigationValues.rightValue = 0;		//r_pwm
+			cmdNavigationValues.leftValue = 0;		//l_pwm
+			break;
 		default:
 			error = ARDCOMMUNICATION;
 			//Serial.print(Serial.readString()); //Testing
