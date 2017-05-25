@@ -132,6 +132,8 @@ class Statemachine:
             return self.bottleneck_state
 
     def bottleneck_state(self):
+        pass
+
 
 
 
@@ -140,7 +142,8 @@ statemachine = Statemachine()
 state = statemachine.waiting_for_go_state
 
 
-while state: state = state()
+while state:
+    state = state()
 
 
 
