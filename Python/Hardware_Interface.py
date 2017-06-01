@@ -6,7 +6,7 @@ import logging
 import RPi.GPIO as GPIO
 import math
 
-logging.basicConfig(level=logging.CRITICAL)
+
 
 log = logging.getLogger(__name__)
 GPIO.setmode(GPIO.BOARD)
@@ -35,7 +35,7 @@ class Display:
 
         def __init__(self, pins):
             self.pins = pins
-            GPIO.setup(self.pins, GPIO.IN, pull_up_down = GPIO.PUD_UP)
+            GPIO.setup(self.pins, GPIO.OUT)
             GPIO.output(pins, GPIO.LOW)
             self.display_number(0)
 
