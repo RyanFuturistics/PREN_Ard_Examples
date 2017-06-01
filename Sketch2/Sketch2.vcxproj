@@ -13,7 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{AE1085CD-8C16-4661-B609-30A5999F2696}</ProjectGuid>
     <RootNamespace>Sketch2</RootNamespace>
-    <ProjectName>MotorDriverL297_298</ProjectName>
+    <ProjectName>MotorDriver_L297_298</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

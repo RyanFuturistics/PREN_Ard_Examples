@@ -25,9 +25,12 @@ typedef enum direction {
 
 //----- ticks
 typedef struct ticks_ {
-	int now = 0;		// Kalibrierstellung
-	int old = 0;
-	int dt = 0;
+	//int now = 0;
+	//int old = 0;
+	//int dt = 0;	
+	long now = 0;		// Kalibrierstellung
+	long old = 0;
+	long dt = 0;
 }ticks_t;
 
 //----- state sensor

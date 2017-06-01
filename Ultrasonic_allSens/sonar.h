@@ -12,7 +12,7 @@
 
 #endif
 /* --------------- sonar.h --------------- */
-#define SONAR_NUM		3
+#define SONAR_NUM		6
 #define MAX_DISTANCE	200
 #define MEDIAN_ITERATIONS 3
 //#define PING_INTERVAL	33		//Millisekunden zwischen sensor pings (29ms als minimum).

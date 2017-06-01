@@ -7,15 +7,6 @@
 // 
 // 
 
-/* WORKS
-unsigned long get_dt_ms() {
-dt_now = millis();
-dt = dt_now - dt_old;
-dt_old = dt_now;
-return dt;
-}
-*/
-
 void update_dTicks(encoder_t *enc) {
 	enc->ticks.dt = enc->ticks.now - enc->ticks.old;
 	enc->ticks.old = enc->ticks.now;
@@ -57,7 +48,7 @@ void updateResult(encoder_t *enc) {
 
 	//DIV 0 !!!!!
 	enc->result.ticksPerSecond = 100*((float)enc->ticks.dt / (float)enc->time.dt);	// [Ticks/s] OHNE *1000, weil ms ohne Koma ; !Cast : float = int / (unsigned long) ;	
-																				//--- Geschwindigkeit [Ticks / s]
+	//--- Geschwindigkeit [Ticks / s]
 	enc->result.speed = enc->result.ticksPerSecond / 2;
 	//--- Beschleunigung [Ticks / s^2]
 	enc->result.speedOld = enc->result.speed;

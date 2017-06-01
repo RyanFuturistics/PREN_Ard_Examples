@@ -339,7 +339,7 @@ void loop() {
 		Move robot forward specified numbers of encoder ticks.
 		*/
 		case 'C':
-			//Funktionsaufruf
+			//Funktionsaufruf C[incL,incR,direction]
 			// Check MaxValue for Increments && DriveDirection (Forward or Backward)
 			if (
 				((cmdNavigationValues.leftIncrement < MAXINCREMENTTICKS) || (cmdNavigationValues.rightInrement < MAXINCREMENTTICKS))

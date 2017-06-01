@@ -16,24 +16,24 @@
 @see
 /*
 
-
 */
 // the setup function runs once when you press reset or power the board
-/* --------------- << | INCLUDE | >> --------------- */
+/* --------------- << || INCLUDE || >> --------------- */
 
 // Import via "Add Library"
 #include "sonar.h"
 #include <NewPing.h>
 
-/* --------------- << | CHECK | >> --------------- */
+/* --------------- << || CHECK || >> --------------- */
 unsigned int	us_timeMeasurement[SONAR_NUM];	// Zeit pro Messung bei Ultraschallsensoren
 unsigned int	us_timeMeasurementsTotal = 0;
 /* --------------- (END - CHECK) --------------- */
 
-/* --------------- << | INPUT | >> --------------- */
+/* --------------- << || INPUT || >> --------------- */
 int buttonUS_measure = 53;
 /* --------------- (END - INPUT) --------------- */
-/* --------------- << | ULTRASONIC | >> --------------- */
+
+/* --------------- << || ULTRASONIC || >> --------------- */
 /**
 *	Definiert Ports der Ultraschallsensoren.
 *
@@ -46,11 +46,11 @@ NewPing sonar[SONAR_NUM] = {		//Sensor object array
 	NewPing(22, 23,MAX_DISTANCE),		//Sens 1
 	NewPing(24, 25,MAX_DISTANCE),		//Sens 2
 	NewPing(26, 27,MAX_DISTANCE),		//Sens 3
-	//NewPing(28, 29,MAX_DISTANCE),		//Sens 4
-	//NewPing(30, 31,MAX_DISTANCE),		//Sens 5
-	//NewPing(32, 33,MAX_DISTANCE),		//Sens 6
+	NewPing(28, 29,MAX_DISTANCE),		//Sens 4
+	NewPing(30, 31,MAX_DISTANCE),		//Sens 5
+	NewPing(32, 33,MAX_DISTANCE),		//Sens 6
 };
-/* ---------- Values ---------- */
+/* ---------- | Values | ---------- */
 int i = 0;
 int nrMeasurements = 0;
 //unsigned int	us_cm[SONAR_NUM];
@@ -61,22 +61,32 @@ float	us_s[SONAR_NUM];
 //unsigned long	us_median_s[SONAR_NUM];
 float	us_median_s[SONAR_NUM];
 
+/* ---------- | Values - Offset | ---------- */
+/* ID		| 1	| 2	| 3 | 4 | 5 | 6  |
+ * Offset	|11	| 8 | 5 | 0	| 0	| 0 | */
+ // Nach ID {1,2,3,4,5,6}
+float us_offset_mm[SONAR_NUM] = { -11, -8, -5, 0, 0, 0 };		// ID 1..6
+//float us_offset_negativ_mm[SONAR_NUM] = { 11, 8, 5 };			// ID 1..3
+//float us_offset_negativ_mm[SONAR_NUM] = { 0.1, 0.5, 0.8 };	// ID 4..6
+
+
 /* --------------- (END - ULTRASONIC) --------------- */
 
 /* --------------- << | DRIVER | >> --------------- */
 // No Code ... not yet
 /* --------------- (END - DRIVER) --------------- */
 
+/* --------------- << || Setup || >> --------------- */
 // the setup function runs once when you press reset or power the board
 void setup() {
 	Serial.begin(9600);
 	pinMode(buttonUS_measure, INPUT);
 	/* CSV-Format - Header */
 	//Serial.print("Sensor 1 [mm];TimeSens 1 [us]; Sensor 2 [mm];TimeSens 2 [us]; Sensor 3 [mm];TimeSens 3 [us];TimeInsg\n");
-	Serial.print("MessungNr;Sensor 1[mm];Sensor 2[mm];Sensor 3[mm]\n");
+	Serial.print("MessungNr;Sensor 1[mm];Sensor 2[mm];Sensor 3[mm];Sensor 4[mm];Sensor 5[mm];Sensor 6[mm]\n");
 }
-/* --------------- << | MAIN | >>--------------- */
 
+/* --------------- << || MAIN || >>--------------- */
 // the loop function runs over and over again until power down or reset
 void loop() {
 	delay(1500);
@@ -129,7 +139,7 @@ void loop() {
 
 		/* CSV-Format */
 
-		Serial.print(us_median_mm[i]);
+		Serial.print(us_median_mm[i]+us_offset_mm[i]);
 		Serial.print(";");
 		//Serial.print("Time: \t");
 		//Serial.print(us_timeMeasurement[i]);

@@ -1,6 +1,7 @@
 /* Serial Test Code*/
 
 //String inputString = "";         // a string to hold incoming data
+#include <SoftwareSerial.h>
 int inputInt = 0;
 boolean inputComplete = false;  // whether the input is complete
 
