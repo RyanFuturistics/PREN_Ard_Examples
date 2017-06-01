@@ -27,6 +27,11 @@
 #define PID_D_MAX 0.03
 
 #define PID_OUTPUT_MAX 245
+
+//----- TURN
+#define TURN_SPEED_SLOW 50
+#define TURN_SPEED_FAST 100
+
 /*---------- || < Flags > || ----------*/
 boolean debugFlag = 0;	//0:Send NO data to PC 1:Send data to PC via Serial
 
@@ -41,11 +46,11 @@ enum color_ {
 /*---------- || < Mainboard - GPIO > || ----------*/
 //------ RGB
 const byte rgbLeftRed = 22;
-const byte rgbLeftBlue = 23;
-const byte rgbLeftGreen = 24;
+const byte rgbLeftGreen = 23;
+const byte rgbLeftBlue = 26;
 const byte rgbRightRed = 27;
-const byte rgbRightBlue = 26;
-const byte rgbRightGreen = 25;
+const byte rgbRightGreen = 24;
+const byte rgbRightBlue = 25;
 
 typedef struct rgb_t{
 	byte red;
@@ -274,7 +279,6 @@ void loop() {
 	}
 	/*---------- || Taster || ----------*/
 	if ((digitalRead(tasterRight)) == HIGH) {
-		statusArduino = BUSY;
 		/*----- Drive forward
 		rightPIDval.Setpoint = 150;
 		leftPIDval.Setpoint = 150;
@@ -284,13 +288,8 @@ void loop() {
 		leftPIDval.Setpoint = 0;
 		rightPIDval.Setpoint = 0;
 		*/
-		/*----- Turn Left 90 */
- 		cmdNavigation = TURNLEFT90;
-		cmdNavigationValues.encRightOld = encRight.ticks.now;
-		rgbSet(rgbLeft, BLUE);
 	}
 	else {
-		rgbSet(rgbLeft, BLANK);
 		//rightPIDval.Setpoint = 0;
 		//leftPIDval.Setpoint = 0;
 	}
@@ -327,11 +326,12 @@ void loop() {
 
 	//
 	if (statusArduino == OK) {
+		rgbSet(rgbRight, RED);
+		rgbSet(rgbLeft, RED);
 		/*---------- || cmdRaspberryPi || ----------*/
 		/* Raspberry Pi => Arduino
 		* Receive Cmd from Raspberry Pi.
 		*/
-		rgbSet(rgbRight, GREEN);
 		printInformationFlag = 1;
 		switch (cmdRaspb) {
 		/*
@@ -499,8 +499,9 @@ void loop() {
 		
 	}
 	else if(statusArduino == BUSY) {
-		/*---------- || cmd Abarbeitung || ----------*/
 		rgbSet(rgbRight, BLUE);
+		rgbSet(rgbLeft, BLUE);
+		/*---------- || cmd Abarbeitung || ----------*/
 		printInformationFlag = 0;
 
 		switch (cmdNavigation) {
@@ -535,14 +536,8 @@ void loop() {
 			if (deltaTicksRight < degreeTicks_) {
 				setDriverDirection(4);			// left Backward, right Forward
 				//----- Turn speed
-				if (degreeTicks_ > 1000) {
-					leftPIDval.Setpoint = 100;
-					rightPIDval.Setpoint = 100;
-				}
-				else {
-					leftPIDval.Setpoint = 30;
-					rightPIDval.Setpoint = 30;
-				}
+				if (degreeTicks_ > 1000) { leftPIDval.Setpoint = TURN_SPEED_FAST; rightPIDval.Setpoint = TURN_SPEED_FAST; }
+				else {leftPIDval.Setpoint = TURN_SPEED_SLOW; rightPIDval.Setpoint = TURN_SPEED_SLOW;}
 			}
 			else {
 				statusArduino = OK;
@@ -562,8 +557,8 @@ void loop() {
 			if (deltaTicksLeft < degreeTicks_) {
 				setDriverDirection(3);			// left Forward, right Backward		//@OPTIMIZE only difference
 				//----- Turn Speed
-				if (degreeTicks_ > 1000) {leftPIDval.Setpoint = 100;rightPIDval.Setpoint = 100;}
-				else {leftPIDval.Setpoint = 30;rightPIDval.Setpoint = 30;}
+				if (degreeTicks_ > 1000) {leftPIDval.Setpoint = TURN_SPEED_FAST;rightPIDval.Setpoint = TURN_SPEED_FAST;}
+				else {leftPIDval.Setpoint = TURN_SPEED_SLOW;rightPIDval.Setpoint = TURN_SPEED_SLOW;}
 			}
 			else {
 				statusArduino = OK;
@@ -640,11 +635,11 @@ void initMainboardGPIO() {
 	//----- rgbLeft
 	rgbLeft.red = rgbLeftRed; rgbLeft.green = rgbLeftGreen; rgbLeft.blue = rgbLeftBlue;
 	pinMode(rgbLeft.red, OUTPUT); pinMode(rgbLeft.green, OUTPUT); pinMode(rgbLeft.blue, OUTPUT);
-	rgbSet(rgbLeft, BLANK);
+	rgbSet(rgbLeft, RED);
 	//----- rgbRight
 	rgbRight.red = rgbRightRed; rgbRight.green = rgbRightGreen; rgbRight.blue = rgbRightBlue;
 	pinMode(rgbRight.red, OUTPUT); pinMode(rgbRight.green, OUTPUT); pinMode(rgbRight.blue, OUTPUT);
-	rgbSet(rgbRight, BLANK);
+	rgbSet(rgbRight, RED);
 }
 /*------- PID ------*/
 //--- leftPID
