@@ -6,7 +6,6 @@
 
 #include <string.h>
 
-/*---------- || PIN || ----------*/
 // Encoder
 const byte interruptEncLeftA = 18;
 const byte interruptEncLeftB = 19;
@@ -44,7 +43,7 @@ typedef struct {
 //----- encoder
 typedef struct {
 	char* name;
-	char* direction;
+	char* direction;		// Zu struct/enum und fuer Ansteuerung verwenden? (gemeinsame Variable?)
 	int zustand = 1;
 	ticks_t ticks;
 	state_t state;
@@ -72,6 +71,7 @@ void printSpeed(encoder_t *enc);
 void printZustand(encoder_t *enc);
 void printAll(encoder_t *enc);
 
+/*---------- || Functions - Update || ----------*/
 void update_dTicks(encoder_t *enc) {
 	enc->ticks.dt = enc->ticks.now - enc->ticks.old;
 	enc->ticks.old = enc->ticks.now;
@@ -126,9 +126,9 @@ void updateResult(encoder_t *enc) {
 	enc->result.speed = enc->result.ticksPerSecond / 2;
 }
 
-/*---------- || Interrupt - function || ----------*/
+/*---------- || < Interrupt - function > || ----------*/
 /**
- * Encoder parameter ticks und zustand aktualisieren.
+ * Encoder parameter ticks und Zustand aktualisieren.
  *
 */
 void encoder(encoder_t *enc,byte pinA,byte pinB) {
@@ -179,6 +179,7 @@ void encoder(encoder_t *enc,byte pinA,byte pinB) {
 	}
 }
 
+/*---------- || < init > || ----------*/
 void initEncoder() {
 	//----- | Interrupt - Pin | -----
 	//--- Left
@@ -196,7 +197,7 @@ void initEncoder() {
 	attachInterrupt(digitalPinToInterrupt(interruptEncRightA), encoderRight, CHANGE);
 	attachInterrupt(digitalPinToInterrupt(interruptEncRightB), encoderRight, CHANGE);
 	
-	//----- | init | -----
+	//----- | Initialisierung | -----
 	//--- Left
 	encLeft.name = strdup("Left");
 	encLeft.direction = strdup("stop");
@@ -205,16 +206,39 @@ void initEncoder() {
 	encRight.direction = strdup("stop");
 }
 
-/*---------- || Setup || ----------*/
+/*---------- || < Setup > || ----------*/
 // the setup function runs once when you press reset or power the board
 void setup() {
 	// Serial
 	Serial.begin(9600);
 	// Encoder
 	initEncoder();
+
+	//Motor Links
+	analogWrite(6, 0);
+	analogWrite(7, 30);
+	//Motor Rechts
+	analogWrite(8, 20);
+	analogWrite(9, 0);
 }
 
-/*---------- || Print || ----------*/
+/*---------- || < Main > || ----------*/
+// the loop function runs over and over again until power down or reset
+void loop() {
+	updateResult(&encLeft);
+	updateResult(&encRight);
+
+	printAll(&encLeft);
+	printAll(&encRight);
+
+
+	delay(500);
+}
+
+
+
+
+/*---------- || < Print > || ----------*/
 void printDirection(encoder_t *enc) {
 	Serial.print("Direction: \t");
 	updateDirection(enc);
@@ -255,15 +279,8 @@ void printAll(encoder_t *enc) {
 	printDTickets(enc);
 	printDTime(enc);
 }
-/*---------- || Main || ----------*/
-// the loop function runs over and over again until power down or reset
-void loop() {
-	printAll(&encLeft);
-	printAll(&encRight);
-	delay(500);
-}
 
-/*---------- || Interrupt || ----------*/
+/*---------- || < ISR > || ----------*/
 void encoderLeft() {
 	encoder(&encLeft, interruptEncLeftA, interruptEncLeftB);
 }
