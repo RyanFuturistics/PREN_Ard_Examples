@@ -24,9 +24,12 @@ class Robot:
         self.speed = 1
         self.left_ticks = 0
         self.right_ticks = 0
-        self.cm_to_ticks = 42
+        self.cm_to_ticks = 1000 / 11
+        self.deg_to_ticks = 2050 / 90
         self.state = 0
         self.error = 0
+
+
 
     def send_cmd(self, cmd):
         try:
@@ -42,6 +45,27 @@ class Robot:
 
     def get_status(self):
        self.send_cmd("I")
+
+    def read_pid_out(self):
+        self.handle.write("G\n")
+        data = self.handle.readline()[:-1]
+        print data
+        try:
+            items = data.split(",")
+
+            log.info("robot response: <%s>:" % data)
+            millis, left, right = float(items[0]), float(items[1]), float(items[2])
+
+            with open("pid.log", "a") as f:
+                f.write(str(millis) + "\t" + str(left) + "\t" + str(right) + "\n")
+
+
+        except Exception as e:
+
+            self.state = "Error2"
+            log.critical("Serial Write Error")
+            log.critical(e.message)
+
 
     def read_reponse(self):
 
@@ -82,11 +106,11 @@ class Robot:
 
     def move_fwd_ticks(self, ticks):
         log.debug("FWD " + str(ticks) + "ticks")
-        self.send_cmd("C{:010d},{:03d},{:1d}".format(ticks, self.speed, self.FWD))
+        self.send_cmd("C{:d},{:d},{:1d}".format(ticks, ticks, self.FWD))
 
     def move_rev_ticks(self, ticks):
         log.debug("FWD " + str(ticks) + "ticks")
-        self.send_cmd("C{:010d},{:03d},{:1d}".format(ticks, self.speed, self.REV))
+        self.send_cmd("C{:d},{:d},{:1d}".format(ticks, ticks, self.REV))
 
     def fwd(self, left_speed, right_speed):
         log.debug("FWD L, R Speed " + str(left_speed) + "," + str(right_speed) )
@@ -104,13 +128,28 @@ class Robot:
         log.debug("REV L, R Speed " + str(left_speed) + "," + str(right_speed) )
         self.send_cmd("M{:03d},{:03d},{:1d}".format(left_speed, right_speed, self.RIGHT))
 
-    def left_turn(self, degrees):
-        log.debug("turn left" + str(degrees))
-        self.send_cmd("L{:03d}".format(degrees))
+    def left_turn(self, deg):
+        ticks = deg * self.deg_to_ticks
+        log.debug("turn left" + str(ticks))
+        self.send_cmd("L{:d}".format(ticks))
 
-    def right_turn(self, degrees):
-        log.debug("turn right" + str(degrees))
-        self.send_cmd("R{:03d}".format(degrees))
+    def right_turn(self, deg):
+        ticks = deg * self.deg_to_ticks
+        log.debug("turn right" + str(ticks))
+        self.send_cmd("R{:d}".format(ticks))
+
+    def set_pid(self, Kp, Ki, Kd):
+        self.set_left_pid(Kp, Ki, Kd)
+        self.set_right_pid(Kp, Ki, Kd)
+
+    def set_left_pid(self, Kp, Ki, Kd):
+        self.send_cmd("P%d,%d,%d\n" % (int(Kp * 1000), int(Ki * 1000), int(Kd * 1000)))
+
+    def set_right_pid(self, Kp, Ki, Kd):
+        self.send_cmd("Q%d,%d,%d\n" % (int(Kp * 1000), int(Ki * 1000), int(Kd * 1000)))
+
+
+
 
     def stop(self):
         log.debug("STOP ")

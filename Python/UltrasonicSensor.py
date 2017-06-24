@@ -95,12 +95,12 @@ class UltrasonicSensor:
 
 class SensorArray:
 
-    LF = 2
-    LR = 3
-    RF = 0
-    RR = 1
-    FL = 4
-    FR = 5
+    LF = 5
+    LR = 4
+    RF = 1
+    RR = 0
+    FL = 3
+    FR = 2
 
     offsets = [0, 0, 0, 0, 0, 0]
 

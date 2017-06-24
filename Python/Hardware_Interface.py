@@ -25,10 +25,10 @@ class Switch:
         GPIO.output(self. pin, state)
 
     def left_course(self):
-        return self.read_pin() == 1
+        return self.read_pin() == 0
 
     def right_course(self):
-        return self.read_pin() == 0
+        return self.read_pin() == 1
 
 class Display:
         """ MSB first!!!!"""
